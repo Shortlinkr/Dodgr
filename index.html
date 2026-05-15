@@ -92,6 +92,7 @@
         
         /* Buttons & Inputs */
         .btn-primary {
+            pointer-events: auto;
             background: rgba(0, 255, 255, 0.05);
             border: 1px solid var(--cyan);
             color: var(--cyan);
@@ -124,6 +125,7 @@
         .btn-primary:hover::before { left: 100%; }
 
         .diff-btn {
+            pointer-events: auto;
             background: rgba(255,255,255,0.03);
             border: 1px solid rgba(255,255,255,0.1);
             padding: 8px 16px;
@@ -159,6 +161,7 @@
             font-family: 'Rajdhani', sans-serif;
             font-weight: 600;
             letter-spacing: 1px;
+            pointer-events: auto;
             cursor: pointer;
             transition: all 0.2s;
         }
@@ -213,6 +216,8 @@
             transition: all 0.3s;
             opacity: 0.3;
             backdrop-filter: blur(4px);
+            user-select: none;
+            -webkit-user-select: none;
         }
         #blast-control.ready {
             opacity: 1;
@@ -222,6 +227,13 @@
             transform: scale(1.05);
         }
         #blast-control.ready:hover { transform: scale(1.15); }
+        #blast-control.hyper {
+            border-color: #00aaff;
+            color: #00aaff;
+            box-shadow: 0 0 35px rgba(0, 170, 255, 0.6), inset 0 0 20px rgba(0, 170, 255, 0.5);
+            background: rgba(0, 170, 255, 0.25);
+            transform: scale(1.1);
+        }
         
         .stat-value { transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: inline-block; }
         .pop { transform: scale(1.3); color: #fff; text-shadow: 0 0 10px #fff; }
@@ -251,12 +263,17 @@
 
         /* Utility */
         .glass-panel {
-            background: rgba(10, 10, 15, 0.4);
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(0, 255, 255, 0.1);
+            background: rgba(10, 10, 15, 0.6);
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(0, 255, 255, 0.2);
             border-radius: 8px;
             padding: 8px 16px;
         }
+
+        /* Sandbox Custom Scrollbar */
+        #sandbox-panel::-webkit-scrollbar { width: 4px; }
+        #sandbox-panel::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        #sandbox-panel::-webkit-scrollbar-thumb { background: rgba(255,0,255,0.5); border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -316,8 +333,41 @@
                 <div id="level-val" class="text-2xl font-black text-purple-400 stat-value leading-none" style="text-shadow: 0 0 10px rgba(255,0,255,0.5);">1</div>
             </div>
 
-            <div id="sandbox-notice" class="hidden absolute top-[80px] left-1/2 transform -translate-x-1/2 text-center text-[#ff00ff] font-bold text-sm tracking-widest uppercase bg-[rgba(255,0,255,0.1)] border border-[#ff00ff] px-4 py-1 rounded">
-                Sandbox Active<br><span class="text-[10px] text-white">Press 1-5 to Spawn Entities</span>
+            <!-- SANDBOX CONTROL PANEL -->
+            <div id="sandbox-panel" class="hidden absolute top-20 left-4 glass-panel flex-col gap-3 w-[200px] z-50 text-[11px] pointer-events-auto max-h-[70vh] overflow-y-auto">
+                <h3 class="text-[#ff00ff] font-bold uppercase text-sm border-b border-[#ff00ff]/30 pb-1">Dev Sandbox</h3>
+                
+                <label class="flex justify-between items-center text-cyan-300 font-semibold cursor-pointer">
+                    God Mode <input type="checkbox" id="sb-godmode" checked class="accent-[#ff00ff] w-4 h-4">
+                </label>
+                
+                <label class="flex flex-col text-cyan-300 font-semibold">
+                    <div class="flex justify-between">Time Scale: <span id="sb-time-val" class="text-white">1.0x</span></div>
+                    <input type="range" id="sb-time" min="0.1" max="3" step="0.1" value="1" class="accent-[#00ffff] mt-2">
+                </label>
+
+                <label class="flex flex-col text-cyan-300 font-semibold mt-1">
+                    Game Level:
+                    <div class="flex gap-1 mt-1">
+                        <button class="bg-black/50 px-3 py-1 border border-cyan-500/30 hover:bg-cyan-500/30 text-white transition" onclick="setLevel(level-1)">-</button>
+                        <input type="number" id="sb-level" class="bg-black/50 border border-cyan-500/30 text-center w-full text-white outline-none" value="1" onchange="setLevel(parseInt(this.value))">
+                        <button class="bg-black/50 px-3 py-1 border border-cyan-500/30 hover:bg-cyan-500/30 text-white transition" onclick="setLevel(level+1)">+</button>
+                    </div>
+                </label>
+
+                <div class="flex gap-1 mt-1">
+                    <button class="flex-1 bg-black/50 px-2 py-2 border border-purple-500/50 hover:bg-purple-500/30 text-purple-300 font-bold transition" onclick="player.blasts += 5">+5 Blasts</button>
+                    <button class="flex-1 bg-black/50 px-2 py-2 border border-yellow-500/50 hover:bg-yellow-500/30 text-yellow-300 font-bold transition" onclick="player.starTimer = 30">Star (30s)</button>
+                </div>
+
+                <div class="border-t border-cyan-500/30 pt-3 mt-1 grid grid-cols-2 gap-1.5">
+                    <button class="bg-black/50 py-1.5 border border-red-500/40 hover:bg-red-500/30 text-red-300 transition uppercase tracking-wider" onclick="objects.push(new FallingObject('enemy', 1))">Enemy</button>
+                    <button class="bg-black/50 py-1.5 border border-orange-500/40 hover:bg-orange-500/30 text-orange-300 transition uppercase tracking-wider" onclick="objects.push(new FallingObject('stalker', 1))">Stalker</button>
+                    <button class="bg-black/50 py-1.5 border border-teal-500/40 hover:bg-teal-500/30 text-teal-300 transition uppercase tracking-wider" onclick="objects.push(new FallingObject('glitch', 1))">Glitch</button>
+                    <button class="bg-black/50 py-1.5 border border-purple-500/40 hover:bg-purple-500/30 text-purple-300 transition uppercase tracking-wider" onclick="objects.push(new FallingObject('void', 1))">Void</button>
+                    <button class="bg-black/50 py-1.5 border border-red-600/60 hover:bg-red-600/40 text-red-400 font-bold transition uppercase tracking-wider" onclick="beams.push(new BeamCube())">Beam</button>
+                    <button class="bg-black/50 py-1.5 border border-pink-500/40 hover:bg-pink-500/30 text-pink-300 transition uppercase tracking-wider" onclick="objects.push(new FallingObject('rainbow', 1))">Rainbow</button>
+                </div>
             </div>
 
             <button id="music-toggle" onclick="toggleMusic(event)" title="Toggle Background Music">
@@ -337,9 +387,15 @@
                 <div id="star-timer-fill"></div>
             </div>
 
-            <div id="blast-control" onclick="triggerBlast()">
+            <!-- Enhanced Blast Control bound to new input events -->
+            <div id="blast-control" 
+                 onmousedown="startBlastInput(event)" 
+                 onmouseup="endBlastInput(event)" 
+                 onmouseleave="endBlastInput(event)"
+                 ontouchstart="startBlastInput(event)" 
+                 ontouchend="endBlastInput(event)">
                 <span id="blast-count" class="text-3xl font-black leading-none mb-1">0</span>
-                <span class="text-[10px] tracking-[0.2em] uppercase font-bold opacity-80">Blast</span>
+                <span id="blast-label" class="text-[10px] tracking-[0.2em] uppercase font-bold opacity-80">Blast</span>
             </div>
         </div>
 
@@ -361,7 +417,7 @@ const SOUND_PATHS = {
     blastPickup: BASE_URL + "power_up.mp3",
     blastExplosion: BASE_URL + "blast_shockwave.mp3",
     enemyVaporize: BASE_URL + "enemy_vaporize.mp3",
-    enemySpawn: BASE_URL + "span.mp3",
+    enemySpawn: BASE_URL + "spawn.mp3",
     universalDeath: BASE_URL + "death.mp3",
     rainbowSpawn: BASE_URL + "spawn.mp3",
     stalkerSpawn: BASE_URL + "spawn.mp3",
@@ -487,6 +543,11 @@ let currentDiff = 'normal';
 let currentQuality = 'high';
 let sandboxMode = false;
 let secretInput = "";
+let sandboxTimeScale = 1.0;
+
+// Blast input state
+let blastInputActive = false;
+let vaporizeSoundTimer = 0;
 
 function setDifficulty(diff) {
     currentDiff = diff;
@@ -515,6 +576,12 @@ function setQuality(val) {
     SFX.play('uiHover', 0.3);
 }
 
+function setLevel(newLevel) {
+    level = Math.max(1, newLevel);
+    levelEl.textContent = level;
+    document.getElementById('sb-level').value = level;
+}
+
 const randRange = (min, max) => Math.random() * (max - min) + min;
 const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
 
@@ -532,9 +599,15 @@ class Player {
         this.hasShield = false;
         this.shieldTimer = 0;
         this.timeWarpTimer = 0;
-        this.starTimer = sandboxMode ? 99999 : 0;
-        this.blasts = sandboxMode ? 999 : 0;
+        this.starTimer = 0;
+        this.blasts = 0;
         this.trail = [];
+        
+        // Hyper Beam state variables
+        this.chargeTimer = 0;
+        this.blastFired = false;
+        this.isFiringHyperBeam = false;
+        this.hyperBeamDrain = 0;
     }
 
     update(dt) {
@@ -544,18 +617,13 @@ class Player {
         if (this.moveRight) this.x += this.speed * dt;
         this.x = clamp(this.x, 0, CONFIG.WIDTH - this.width);
 
-        // Add smooth trail points
         this.trail.push({ x: this.x, y: this.y, life: 1.0 });
         if (this.trail.length > 15) this.trail.shift();
         this.trail.forEach(t => t.life -= dt * 3.5);
         this.trail = this.trail.filter(t => t.life > 0);
 
-        if (this.shieldTimer > 0) {
-            this.shieldTimer -= dt;
-        } else {
-            if (this.hasShield) SFX.play('shieldBreak');
-            this.hasShield = false;
-        }
+        if (this.shieldTimer > 0) this.shieldTimer -= dt;
+        else if (this.hasShield) { SFX.play('shieldBreak'); this.hasShield = false; }
 
         if (this.timeWarpTimer > 0) {
             this.timeWarpTimer -= dt;
@@ -563,30 +631,57 @@ class Player {
         }
         
         if (this.starTimer > 0) {
-            if (!sandboxMode) this.starTimer -= dt;
-            if (this.starTimer < 3 && this.starTimer > 0 && !sandboxMode) SFX.play('starWarning', 0.3);
-            if (this.starTimer <= 0) {
-                SFX.play('starCollapse');
-            }
+            this.starTimer -= dt;
+            if (this.starTimer < 3 && this.starTimer > 0) SFX.play('starWarning', 0.3);
+            if (this.starTimer <= 0) SFX.play('starCollapse');
 
             const bar = document.getElementById('star-timer-bar');
             const fill = document.getElementById('star-timer-fill');
             if (bar && fill) {
-                if (!sandboxMode) {
-                    bar.classList.remove('hidden');
-                    fill.style.width = `${(this.starTimer / 30) * 100}%`;
-                } else {
-                    bar.classList.add('hidden');
-                }
+                bar.classList.remove('hidden');
+                fill.style.width = `${(this.starTimer / 30) * 100}%`;
             }
         } else {
             document.getElementById('star-timer-bar')?.classList.add('hidden');
         }
 
-        const blastCount = document.getElementById('blast-count');
+        // --- HYPER BEAM LOGIC ---
+        if (blastInputActive && !this.blastFired && this.blasts >= 5) {
+            this.chargeTimer += dt;
+            if (this.chargeTimer > 0.2) {
+                this.isFiringHyperBeam = true;
+                this.blastFired = true; // Prevents triggering normal tap blast
+                SFX.play('blastExplosion', 0.6); // Activation sound
+            }
+        }
+
         const blastBtn = document.getElementById('blast-control');
-        if (blastCount) blastCount.textContent = sandboxMode ? "∞" : this.blasts;
-        if (blastBtn) {
+        const blastCount = document.getElementById('blast-count');
+        const blastLabel = document.getElementById('blast-label');
+
+        if (this.isFiringHyperBeam) {
+            this.hyperBeamDrain += dt;
+            if (this.hyperBeamDrain > 0.15) { // Drain fast (~6 blasts a second)
+                this.blasts--;
+                this.hyperBeamDrain = 0;
+                if (this.blasts <= 0) {
+                    this.isFiringHyperBeam = false;
+                    blastInputActive = false;
+                }
+            }
+            if(blastBtn) {
+                blastBtn.classList.add('hyper');
+                blastLabel.textContent = "BEAM";
+            }
+        } else {
+            if(blastBtn) {
+                blastBtn.classList.remove('hyper');
+                blastLabel.textContent = "BLAST";
+            }
+        }
+
+        if (blastCount) blastCount.textContent = this.blasts;
+        if (blastBtn && !this.isFiringHyperBeam) {
             if (this.blasts > 0) blastBtn.classList.add('ready');
             else blastBtn.classList.remove('ready');
         }
@@ -595,15 +690,12 @@ class Player {
     draw(ctx) {
         if (!this.isAlive) return;
 
-        // Draw Trail Additive
         ctx.save();
         ctx.globalCompositeOperation = QUALITY_CFG[currentQuality].additive ? 'lighter' : 'source-over';
-        this.trail.forEach((t, i) => {
+        this.trail.forEach((t) => {
             const ratio = t.life;
             ctx.globalAlpha = ratio * 0.4;
             ctx.fillStyle = (currentDiff === 'nightmare') ? '#ff3300' : CONFIG.COLORS.PLAYER;
-            
-            // Taper effect for trail
             const wOffset = (1 - ratio) * (this.width / 2);
             ctx.fillRect(t.x + wOffset, t.y + (1-ratio)*10, this.width - wOffset*2, this.height * ratio);
         });
@@ -616,7 +708,6 @@ class Player {
         
         ctx.shadowColor = mainColor;
         
-        // Ship Core Gradient
         const grad = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.height);
         grad.addColorStop(0, '#ffffff');
         grad.addColorStop(0.4, mainColor);
@@ -872,7 +963,7 @@ const scoreEl = document.getElementById("score-val");
 const levelEl = document.getElementById("level-val");
 const menuEl = document.getElementById("start-menu");
 const uiLayer = document.getElementById("ui-layer");
-const sandboxNotice = document.getElementById("sandbox-notice");
+const sandboxPanel = document.getElementById("sandbox-panel");
 
 canvas.width = CONFIG.WIDTH;
 canvas.height = CONFIG.HEIGHT;
@@ -891,6 +982,13 @@ let shakeAmount = 0;
 let chromaticAberration = 0;
 
 const TIMERS = { beam: 0, stalker: 0, rainbow: 0, star: 0, glitch: 0, void: 0 };
+
+// Initialize Sandbox Slider Listener
+document.getElementById('sb-time').addEventListener('input', (e) => {
+    sandboxTimeScale = parseFloat(e.target.value);
+    document.getElementById('sb-time-val').textContent = sandboxTimeScale.toFixed(1) + 'x';
+});
+
 
 function createExplosion(x, y, color, count = 25, speed = 6) {
     count = Math.max(1, Math.floor(count * QUALITY_CFG[currentQuality].particles));
@@ -924,9 +1022,38 @@ function toggleMusic(e) {
     document.getElementById('music-icon-off').classList.toggle('hidden', isEnabled);
 }
 
+// --- NEW BLAST INPUT HANDLING ---
+function startBlastInput(e) {
+    if (e) e.preventDefault();
+    if (gameState !== 'PLAYING' || !player.isAlive) return;
+    blastInputActive = true;
+    player.chargeTimer = 0;
+    player.blastFired = false;
+
+    // Instant fire tap to preserve responsiveness if we don't have enough blasts for hyper beam
+    if (player.blasts > 0 && player.blasts < 5) {
+        triggerBlast();
+        player.blastFired = true;
+    }
+}
+
+function endBlastInput(e) {
+    if (e) e.preventDefault();
+    if (gameState !== 'PLAYING' || !player.isAlive) {
+        blastInputActive = false;
+        player.isFiringHyperBeam = false;
+        return;
+    }
+    // If it was just a quick tap and we haven't fired yet
+    if (blastInputActive && !player.blastFired && !player.isFiringHyperBeam && player.blasts > 0) {
+        triggerBlast();
+    }
+    blastInputActive = false;
+    player.isFiringHyperBeam = false;
+}
+
 function triggerBlast() {
-    if (!player.isAlive || player.blasts <= 0 || gameState === 'PAUSED') return;
-    if (!sandboxMode) player.blasts--;
+    player.blasts--;
     shakeAmount = 30;
     chromaticAberration = 25;
     SFX.play('blastExplosion');
@@ -951,7 +1078,6 @@ function startGame() {
     SFX.init();
     SFX.play('click');
     menuEl.classList.add('hidden-menu');
-    // Important Fix: Completely disable the menu from catching ANY clicks after fade-out.
     setTimeout(() => { if (gameState !== 'MENU') menuEl.style.display = 'none'; }, 400);
     uiLayer.classList.remove('hidden');
     resetGame();
@@ -963,15 +1089,15 @@ function resetGame() {
     beams = [];
     particles = [];
     score = 0;
-    level = 1;
+    setLevel(1);
     spawnTimer = 0;
     shakeAmount = 0;
     chromaticAberration = 0;
     Object.keys(TIMERS).forEach(k => TIMERS[k] = 0);
     gameState = 'PLAYING';
     scoreEl.textContent = "0";
-    levelEl.textContent = "1";
     lastTime = performance.now();
+    blastInputActive = false;
     SFX.play('click');
 }
 
@@ -986,6 +1112,7 @@ function update(dt) {
     
     if (shakeAmount > 0) shakeAmount -= dt * 60;
     if (chromaticAberration > 0) chromaticAberration -= dt * 45;
+    if (vaporizeSoundTimer > 0) vaporizeSoundTimer -= dt;
     
     const scrollSpeed = (player.timeWarpTimer > 0) ? 60 : 250;
     bgScrollY += scrollSpeed * dt;
@@ -994,6 +1121,8 @@ function update(dt) {
     particles.forEach(p => { 
         if(p.type === 'ring') {
             p.radius += dt * 600;
+        } else if(p.type === 'beam_spark') {
+            p.y += p.vy;
         } else {
             p.x += p.vx; p.y += p.vy; p.vy += p.gravity; p.size = Math.max(0, p.size - dt * 2);
         }
@@ -1004,11 +1133,48 @@ function update(dt) {
     if (gameState !== 'PLAYING') return;
     player.update(dt);
     
+    // Hyper Beam World Logic
+    if (player.isFiringHyperBeam) {
+        shakeAmount = Math.max(shakeAmount, 3);
+        
+        let bWidth = player.width * 0.9;
+        let bX = player.x + (player.width - bWidth) / 2;
+
+        // Visual sparks
+        if (Math.random() < 0.4 * QUALITY_CFG[currentQuality].particles) {
+            particles.push({
+                x: bX + Math.random() * bWidth, 
+                y: player.y, 
+                vy: -Math.random() * 800 - 400, 
+                type: 'beam_spark', 
+                life: 1.0, 
+                color: '#ffffff', 
+                size: Math.random() * 3 + 1, 
+                decay: 2
+            });
+        }
+
+        // Collision logic
+        objects = objects.filter(obj => {
+            if (obj.y < player.y && obj.x < bX + bWidth && obj.x + obj.size > bX) {
+                if (['enemy', 'ghost', 'stalker', 'rainbow', 'glitch', 'void'].includes(obj.type)) {
+                    createExplosion(obj.x + obj.size/2, obj.y + obj.size/2, obj.color, 12);
+                    if (vaporizeSoundTimer <= 0) {
+                        SFX.play('enemyVaporize', 0.15);
+                        vaporizeSoundTimer = 0.1;
+                    }
+                    updateScore(50);
+                    return false;
+                }
+            }
+            return true;
+        });
+    }
+
     const step = currentDiff === 'nightmare' ? 850 : 650;
     const currentLevel = Math.floor(score / step) + 1;
-    if (currentLevel !== level && !sandboxMode) {
-        level = currentLevel;
-        levelEl.textContent = level;
+    if (currentLevel > level && !sandboxMode) {
+        setLevel(currentLevel);
         levelEl.classList.add('pop');
         SFX.play('levelUp');
         setTimeout(() => levelEl.classList.remove('pop'), 400);
@@ -1073,7 +1239,7 @@ function update(dt) {
                 if (obj.type === 'gold') { updateScore(400); SFX.play('scoreGain', 0.4); }
                 if (obj.type === 'blast') { player.blasts++; SFX.play('blastPickup'); }
                 if (obj.type === 'star') { 
-                    if (!sandboxMode) player.starTimer = 30; 
+                    player.starTimer = 30; 
                     SFX.play('starPickup'); SFX.play('starActivation'); 
                 }
                 createExplosion(obj.x + obj.size/2, obj.y + obj.size/2, obj.color, 20);
@@ -1089,8 +1255,11 @@ function update(dt) {
 }
 
 function killPlayer() {
-    if (sandboxMode) return;
+    if (sandboxMode && document.getElementById('sb-godmode').checked) return;
+    
     player.isAlive = false;
+    player.isFiringHyperBeam = false;
+    blastInputActive = false;
     gameState = 'GAMEOVER';
     shakeAmount = 45;
     chromaticAberration = 40;
@@ -1101,7 +1270,6 @@ function killPlayer() {
 function draw() {
     renderScene(ctx, 0, 0);
     
-    // Chromatic pass only on Quality Levels that support it
     if (chromaticAberration > 1 && QUALITY_CFG[currentQuality].chromatic) {
         ctx.save(); 
         ctx.globalCompositeOperation = 'screen'; 
@@ -1122,7 +1290,6 @@ function renderScene(targetCtx, offsetX, offsetY, tintColor) {
         targetCtx.fillStyle = currentDiff === 'nightmare' ? '#1a0505' : '#030305';
         targetCtx.fillRect(0, 0, CONFIG.WIDTH, CONFIG.HEIGHT);
         
-        // Quality Gate for the scrolling grid
         if (QUALITY_CFG[currentQuality].grid) {
             targetCtx.strokeStyle = currentDiff === 'nightmare' ? 'rgba(255, 0, 0, 0.08)' : 'rgba(0, 255, 255, 0.06)';
             targetCtx.lineWidth = 1;
@@ -1138,6 +1305,31 @@ function renderScene(targetCtx, offsetX, offsetY, tintColor) {
 
     if (gameState !== 'MENU') { 
         beams.forEach(b => b.draw(targetCtx)); 
+        
+        // HYPER BEAM RENDERING (Below Player)
+        if (player.isFiringHyperBeam && !tintColor) {
+            targetCtx.save();
+            targetCtx.globalCompositeOperation = QUALITY_CFG[currentQuality].additive ? 'screen' : 'source-over';
+            
+            let pulse = Math.sin(Date.now() / 30) * 0.1 + 0.9;
+            let bWidth = player.width * 0.9 * pulse;
+            let bX = player.x + (player.width - bWidth) / 2;
+
+            targetCtx.shadowBlur = QUALITY_CFG[currentQuality].shadows ? 30 : 0;
+            targetCtx.shadowColor = '#00aaff';
+            targetCtx.fillStyle = `rgba(0, 170, 255, ${0.7 * pulse})`;
+            targetCtx.fillRect(bX, 0, bWidth, player.y + player.height/2);
+
+            let coreW = bWidth * 0.4;
+            let coreX = player.x + (player.width - coreW) / 2;
+            targetCtx.fillStyle = `rgba(200, 240, 255, ${0.9 * pulse})`;
+            targetCtx.shadowBlur = QUALITY_CFG[currentQuality].shadows ? 15 : 0;
+            targetCtx.shadowColor = '#ffffff';
+            targetCtx.fillRect(coreX, 0, coreW, player.y + player.height/2);
+
+            targetCtx.restore();
+        }
+
         player.draw(targetCtx); 
         objects.forEach(obj => obj.draw(targetCtx)); 
     }
@@ -1151,6 +1343,11 @@ function renderScene(targetCtx, offsetX, offsetY, tintColor) {
             targetCtx.beginPath();
             targetCtx.arc(p.x, p.y, p.radius, 0, Math.PI*2);
             targetCtx.stroke();
+        } else if (p.type === 'beam_spark') {
+            targetCtx.fillStyle = '#ffffff';
+            targetCtx.shadowBlur = 5;
+            targetCtx.shadowColor = '#00aaff';
+            targetCtx.fillRect(p.x, p.y, p.size, p.size*3); // Stretched spark
         } else {
             targetCtx.fillStyle = tintColor || p.color; 
             targetCtx.shadowBlur = QUALITY_CFG[currentQuality].shadows ? 10 : 0;
@@ -1191,7 +1388,7 @@ function renderScene(targetCtx, offsetX, offsetY, tintColor) {
 }
 
 function loop(now) {
-    const dt = Math.min((now - lastTime) / 1000, 0.1);
+    const dt = Math.min((now - lastTime) / 1000, 0.1) * sandboxTimeScale;
     lastTime = now;
     update(dt); draw();
     requestAnimationFrame(loop);
@@ -1204,36 +1401,16 @@ window.addEventListener("keydown", (e) => {
         sandboxMode = !sandboxMode;
         secretInput = ""; 
         SFX.play('levelUp');
-        shakeAmount = 20;
+        shakeAmount = 15;
         chromaticAberration = 20;
-        sandboxNotice.classList.toggle("hidden", !sandboxMode);
-        
-        if (sandboxMode && gameState === 'PLAYING') {
-            player.blasts = 999;
-            player.starTimer = 99999;
-            level = 15; 
-            levelEl.textContent = "15";
-        } else if (!sandboxMode && gameState === 'PLAYING') {
-            player.starTimer = 0;
-            player.blasts = 3;
-            level = Math.floor(score / (currentDiff === 'nightmare' ? 850 : 650)) + 1;
-            levelEl.textContent = level;
-        }
-    }
-
-    if (sandboxMode && gameState === 'PLAYING') {
-        if (e.key === '1') objects.push(new FallingObject('enemy', 1));
-        if (e.key === '2') objects.push(new FallingObject('stalker', 1));
-        if (e.key === '3') objects.push(new FallingObject('glitch', 1));
-        if (e.key === '4') objects.push(new FallingObject('void', 1));
-        if (e.key === '5') beams.push(new BeamCube());
+        sandboxPanel.classList.toggle("hidden", !sandboxMode);
     }
 
     if (e.key === "Enter") { if (gameState === 'MENU') startGame(); else togglePause(); return; }
     if (gameState === 'PLAYING') {
         if (e.key === "ArrowLeft" || e.key === "a") player.moveLeft = true;
         if (e.key === "ArrowRight" || e.key === "d") player.moveRight = true;
-        if (e.key === " ") triggerBlast();
+        if (e.key === " " && !blastInputActive) startBlastInput(); // Spacebar blast logic
     }
     if (gameState === 'GAMEOVER' && (e.key.toLowerCase() === 'r' || e.key === ' ')) resetGame();
 });
@@ -1241,6 +1418,7 @@ window.addEventListener("keydown", (e) => {
 window.addEventListener("keyup", (e) => {
     if (e.key === "ArrowLeft" || e.key === "a") player.moveLeft = false;
     if (e.key === "ArrowRight" || e.key === "d") player.moveRight = false;
+    if (e.key === " ") endBlastInput();
 });
 
 canvas.addEventListener("touchstart", (e) => {
